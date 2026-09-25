@@ -70,6 +70,35 @@
     img.setAttribute("aria-label", tr ? `${index + 1}. sayfayı büyüt` : `Enlarge page ${index + 1}`);
   });
 
+  // Each row gives its vertical bounds and panel dividers, in reading order.
+  const panelRows = {
+    1: [[0,.42,[]],[.42,.70,[]],[.70,1,[.5]]],
+    2: [[0,.47,[.37,.64]],[.47,1,[.58]]],
+    3: [[0,.48,[.58]],[.48,1,[.33,.66]]],
+    4: [[0,.20,[]],[.20,.40,[]],[.40,.60,[]],[.60,.80,[]],[.80,1,[.5]]],
+    5: [[0,.25,[]],[.25,.50,[]],[.50,.75,[]],[.75,1,[]]],
+    6: [[0,.34,[.48]],[.34,.68,[.34,.66]],[.68,1,[.5]]],
+    7: [[0,.29,[]],[.29,.48,[]],[.48,.71,[]],[.71,1,[.5]]],
+    8: [[0,.44,[]],[.44,.73,[.5]],[.73,1,[.5]]],
+    9: [[0,.34,[.5]],[.34,.68,[.5]],[.68,1,[.5]]],
+    10: [[0,.25,[]],[.25,.50,[]],[.50,.75,[]],[.75,1,[]]],
+    11: [[0,.39,[.5]],[.39,.72,[.5]],[.72,1,[]]],
+    12: [[0,.36,[.55]],[.36,.68,[.46]],[.68,1,[.5]]],
+    13: [[0,.27,[]],[.27,.53,[]],[.53,.77,[.5]],[.77,1,[]]],
+    14: [[0,.5,[.5]],[.5,1,[.5]]],
+    15: [[0,.5,[.34,.67]],[.5,1,[.34,.67]]],
+    16: [[0,.2,[]],[.2,.4,[]],[.4,.6,[]],[.6,.8,[]],[.8,1,[]]],
+    17: [[0,.5,[.33,.66]],[.5,1,[.5]]],
+    18: [[0,.5,[.45,.76]],[.5,1,[.5]]],
+    19: [[0,.52,[.5]],[.52,1,[.34,.67]]],
+    20: [[0,.28,[]],[.28,.52,[.5]],[.52,.76,[.5]],[.76,1,[]]],
+    21: [[0,.25,[.5]],[.25,.5,[.5]],[.5,.75,[.5]],[.75,1,[.5]]],
+  };
+  const panelStops = pages.flatMap((img, index) => (panelRows[index + 1] || [[0,1,[]]]).flatMap(([top, bottom, cuts]) => {
+    const edges = [0, ...cuts, 1];
+    return edges.slice(0, -1).map((left, part) => ({ page: index + 1, src: img.src, x: left, y: top, w: edges[part + 1] - left, h: bottom - top }));
+  }));
+
   const achievementBox = make("section", "reader-achievements");
   achievementBox.setAttribute("aria-label", tr ? "Başarımlar" : "Achievements");
   const achievementTitle = make("h2", "", tr ? "BAŞARIMLAR" : "ACHIEVEMENTS");
@@ -111,13 +140,16 @@
   const counter = make("span", "reader-counter");
   const next = make("button", "reader-tool page-nav", tr ? "Sonraki →" : "Next →");
   const chapters = make("button", "reader-tool", tr ? "Bölümler" : "Chapters");
+  const guided = make("button", "reader-tool", tr ? "Kare modu" : "Panel mode");
+  const compare = make("button", "reader-tool", tr ? "İki dil: Kapalı" : "Compare: Off");
+  const effects = make("button", "reader-tool", tr ? "Efekt sesi: Kapalı" : "Effects: Off");
   const zen = make("button", "reader-tool", tr ? "Odak modu" : "Focus mode");
   const zenExit = make("button", "reader-zen-exit", tr ? "Odak modundan çık ×" : "Exit focus ×");
   zenExit.type = "button";
   document.body.append(zenExit);
   const share = make("button", "reader-tool", tr ? "Paylaş" : "Share");
   const offline = make("button", "reader-tool", tr ? "Çevrimdışı kaydet" : "Save offline");
-  [mode, prev, counter, next, chapters, zen, share, offline].forEach(item => toolbar.append(item));
+  [mode, prev, counter, next, guided, compare, effects, chapters, zen, share, offline].forEach(item => toolbar.append(item));
   $(".reader-header")?.after(toolbar);
 
   const progress = make("div", "reading-progress");
@@ -129,6 +161,130 @@
 
   let current = Math.min(pages.length, saved);
   let classic = safeGet("paelen:reader:mode", "webtoon") === "classic";
+  let compareEnabled = false;
+  const compareLens = make("div", "compare-lens");
+  const compareLabel = make("span", "compare-label", tr ? "İNGİLİZCE" : "TÜRKÇE");
+  const compareImage = make("div", "compare-image");
+  compareLens.append(compareLabel, compareImage);
+  compareLens.hidden = true;
+  document.body.append(compareLens);
+  compare.setAttribute("aria-pressed", "false");
+  compare.addEventListener("click", () => {
+    compareEnabled = !compareEnabled;
+    compare.setAttribute("aria-pressed", String(compareEnabled));
+    compare.textContent = compareEnabled ? (tr ? "İki dil: Açık" : "Compare: On") : (tr ? "İki dil: Kapalı" : "Compare: Off");
+    compareLens.hidden = true;
+  });
+  pages.forEach(img => {
+    img.addEventListener("pointermove", event => {
+      if (!compareEnabled || event.pointerType !== "mouse") return;
+      const rect = img.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const zoom = 1.5;
+      const alternate = img.src.replace(/\/(tr|en)-(\d+)\.webp$/, (_, code, number) => `/${code === "tr" ? "en" : "tr"}-${number}.webp`);
+      compareImage.style.backgroundImage = `url("${alternate}")`;
+      compareImage.style.backgroundSize = `${rect.width * zoom}px ${rect.height * zoom}px`;
+      compareImage.style.backgroundPosition = `${115 - x * zoom}px ${70 - y * zoom}px`;
+      compareLens.style.left = `${Math.min(window.innerWidth - 250, event.clientX + 16)}px`;
+      compareLens.style.top = `${Math.max(8, Math.min(window.innerHeight - 185, event.clientY + 16))}px`;
+      compareLens.hidden = false;
+    });
+    img.addEventListener("pointerleave", () => { compareLens.hidden = true; });
+  });
+  let effectsEnabled = false;
+  let audioContext;
+  effects.setAttribute("aria-pressed", "false");
+  effects.addEventListener("click", async () => {
+    effectsEnabled = !effectsEnabled;
+    effects.setAttribute("aria-pressed", String(effectsEnabled));
+    effects.textContent = effectsEnabled ? (tr ? "Efekt sesi: Açık" : "Effects: On") : (tr ? "Efekt sesi: Kapalı" : "Effects: Off");
+    if (effectsEnabled) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) { audioContext ||= new AudioContextClass(); try { await audioContext.resume(); } catch {} }
+    }
+  });
+  const playRune = () => {
+    if (!effectsEnabled || !audioContext || document.visibilityState !== "visible") return;
+    try {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(392, audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(784, audioContext.currentTime + .45);
+      gain.gain.setValueAtTime(.0001, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.035, audioContext.currentTime + .04);
+      gain.gain.exponentialRampToValueAtTime(.0001, audioContext.currentTime + .65);
+      oscillator.connect(gain).connect(audioContext.destination);
+      oscillator.start(); oscillator.stop(audioContext.currentTime + .7);
+    } catch {}
+  };
+
+  const guidedDialog = make("dialog", "guided-dialog");
+  const guidedBar = make("div", "guided-bar");
+  const guidedPrev = make("button", "reader-tool", tr ? "← Önceki kare" : "← Previous panel");
+  const guidedCount = make("span", "guided-count");
+  const guidedNext = make("button", "reader-tool", tr ? "Sonraki kare →" : "Next panel →");
+  const guidedCompare = make("button", "reader-tool", tr ? "Diğer dil" : "Other language");
+  const guidedClose = make("button", "reader-tool", tr ? "Kapat ×" : "Close ×");
+  const guidedStage = make("div", "guided-stage");
+  const guidedFrame = make("div", "guided-frame");
+  const guidedImage = make("img", "guided-image");
+  const guidedHint = make("p", "guided-hint", tr ? "Kareye dokunarak TR / EN karşılaştır" : "Tap the panel to compare TR / EN");
+  guidedImage.alt = tr ? "Odaklanan çizgi roman karesi" : "Focused comic panel";
+  guidedFrame.append(guidedImage);
+  guidedStage.append(guidedFrame);
+  guidedBar.append(guidedPrev, guidedCount, guidedNext, guidedCompare, guidedClose);
+  guidedDialog.append(guidedBar, guidedStage, guidedHint);
+  document.body.append(guidedDialog);
+  let guidedIndex = 0;
+  let alternateLanguage = false;
+  const renderGuided = () => {
+    const stop = panelStops[guidedIndex];
+    if (!stop) return;
+    const source = alternateLanguage ? stop.src.replace(/\/(tr|en)-(\d+)\.webp$/, (_, code, number) => `/${code === "tr" ? "en" : "tr"}-${number}.webp`) : stop.src;
+    if (guidedImage.src !== source) guidedImage.src = source;
+    const fullW = Number(pages[stop.page - 1].getAttribute("width"));
+    const fullH = Number(pages[stop.page - 1].getAttribute("height"));
+    const scale = Math.min((window.innerWidth - 30) / (stop.w * fullW), (window.innerHeight - 150) / (stop.h * fullH));
+    guidedFrame.style.width = `${stop.w * fullW * scale}px`;
+    guidedFrame.style.height = `${stop.h * fullH * scale}px`;
+    guidedImage.style.width = `${fullW * scale}px`;
+    guidedImage.style.height = `${fullH * scale}px`;
+    guidedImage.style.left = `${-stop.x * fullW * scale}px`;
+    guidedImage.style.top = `${-stop.y * fullH * scale}px`;
+    guidedCount.textContent = `${guidedIndex + 1} / ${panelStops.length} · ${tr ? "Sayfa" : "Page"} ${stop.page}`;
+    guidedPrev.disabled = guidedIndex === 0;
+    guidedNext.disabled = guidedIndex === panelStops.length - 1;
+    guidedCompare.setAttribute("aria-pressed", String(alternateLanguage));
+    guidedCompare.textContent = alternateLanguage ? (tr ? "Türkçeye dön" : "Back to English") : (tr ? "İngilizceyi göster" : "Show Turkish");
+  };
+  const moveGuided = amount => { guidedIndex = Math.max(0, Math.min(panelStops.length - 1, guidedIndex + amount)); alternateLanguage = false; renderGuided(); };
+  guided.addEventListener("click", () => { guidedIndex = Math.max(0, panelStops.findIndex(stop => stop.page === current)); alternateLanguage = false; guidedDialog.showModal(); renderGuided(); });
+  guidedPrev.addEventListener("click", () => moveGuided(-1));
+  guidedNext.addEventListener("click", () => moveGuided(1));
+  guidedClose.addEventListener("click", () => guidedDialog.close());
+  guidedCompare.addEventListener("click", () => { alternateLanguage = !alternateLanguage; renderGuided(); });
+  let swiped = false;
+  guidedFrame.addEventListener("click", () => { if (swiped) { swiped = false; return; } alternateLanguage = !alternateLanguage; renderGuided(); });
+  let swipeX = null;
+  guidedStage.addEventListener("touchstart", event => { swipeX = event.touches.length === 1 ? event.touches[0].clientX : null; }, { passive: true });
+  guidedStage.addEventListener("touchend", event => {
+    if (swipeX === null || !event.changedTouches.length) return;
+    const delta = event.changedTouches[0].clientX - swipeX;
+    swipeX = null;
+    if (Math.abs(delta) > 55) { swiped = true; moveGuided(delta < 0 ? 1 : -1); setTimeout(() => { swiped = false; }, 350); }
+  }, { passive: true });
+  guidedDialog.addEventListener("close", () => {
+    current = panelStops[guidedIndex].page;
+    render();
+    pages[current - 1].scrollIntoView({ block: "start" });
+  });
+  window.addEventListener("resize", () => { if (guidedDialog.open) renderGuided(); });
+  guidedDialog.addEventListener("keydown", event => {
+    if (event.key === "ArrowRight") { event.preventDefault(); moveGuided(1); }
+    if (event.key === "ArrowLeft") { event.preventDefault(); moveGuided(-1); }
+  });
   const render = () => {
     document.body.classList.toggle("classic-reader", classic);
     mode.textContent = classic ? (tr ? "Dikey kaydırma" : "Vertical scroll") : (tr ? "Sayfa çevirme" : "Page turn");
@@ -382,6 +538,13 @@
   });
 
   if ("IntersectionObserver" in window) {
+    const runePage = pages[11];
+    if (runePage) new IntersectionObserver((entries, observer) => {
+      if (classic || !entries.some(entry => entry.isIntersecting)) return;
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) runePage.classList.add("reader-rune-reveal");
+      playRune();
+      observer.disconnect();
+    }, { threshold: 0.15 }).observe(runePage);
     const observer = new IntersectionObserver(entries => {
       if (entries.some(entry => entry.isIntersecting)) checkNightOwl();
       if (classic) return;
