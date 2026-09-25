@@ -58,18 +58,22 @@
 .reader-pages img{scroll-margin-top:95px;cursor:zoom-in}
 .reader-pages img[hidden]{display:none!important}
 .classic-reader .reader-pages{min-height:60vh}
-.zen-reader>.site-header,.zen-reader>.reader-header,.zen-reader>.site-footer,.zen-reader .chapter-soundtrack,.zen-reader .reader-end{display:none!important}
-.zen-reader .reader-tools{opacity:.18;transition:opacity .2s}
-.zen-reader .reader-tools:hover,.zen-reader .reader-tools:focus-within{opacity:1}
+.zen-reader>.site-header,.zen-reader>.reader-header,.zen-reader>.site-footer,.zen-reader .chapter-soundtrack,.zen-reader .reader-end,.zen-reader .reader-tools,.zen-reader .reading-progress,.zen-reader .comments,.zen-reader .reader-resume{display:none!important}
+.reader-zen-exit{display:none;position:fixed;top:12px;right:12px;z-index:30;padding:10px 14px;color:#fff;background:#201427dd;border:1px solid #76528a;border-radius:5px;font:600 13px var(--font-spartan),sans-serif}
+.zen-reader .reader-zen-exit{display:block;opacity:.35}
+.zen-reader .reader-zen-exit:hover,.zen-reader .reader-zen-exit:focus-visible{opacity:1}
 .reader-dialog{max-width:min(90vw,480px);width:100%;padding:24px;background:#18111f;color:var(--white);border:1px solid #76528a;border-radius:10px;box-shadow:0 25px 80px #000b}
 .reader-dialog::backdrop,.reader-lightbox::backdrop{background:#000d}
 .reader-dialog h2{font:32px var(--font-anton),sans-serif;margin:10px 0 22px}
 .reader-dialog>a,.reader-dialog>button{margin:5px}
 .chapter-drawer-link{display:block;padding:18px;background:#2b1b38;border:1px solid #76528a;border-radius:5px}
-.reader-lightbox{width:100vw;max-width:100vw;height:100vh;max-height:100vh;padding:12px;margin:0;background:#050407;color:#fff;border:0;text-align:center;overflow:auto}
-.reader-lightbox-close{position:sticky;top:0;z-index:2;float:right;padding:10px 16px;color:#fff;background:#2b1b38;border:1px solid #76528a;border-radius:5px}
-.reader-lightbox-image{display:block;width:auto;max-width:100%;max-height:calc(100vh - 95px);margin:auto;object-fit:contain;cursor:zoom-in}
-.reader-lightbox-image.is-zoomed{max-width:none;max-height:none;width:150%;cursor:zoom-out}
+.reader-lightbox{width:100vw;max-width:100vw;height:100vh;max-height:100vh;padding:10px;margin:0;background:#050407;color:#fff;border:0;text-align:center;overflow:hidden}
+.reader-lightbox-controls{display:flex;justify-content:flex-end;gap:8px;min-height:44px}
+.reader-lightbox-control,.reader-lightbox-close{min-width:38px;padding:8px 12px;color:#fff;background:#2b1b38;border:1px solid #76528a;border-radius:5px}
+.reader-lightbox-viewport{height:calc(100vh - 90px);overflow:auto;touch-action:pan-x pan-y}
+.reader-lightbox-image{display:block;width:auto;max-width:100%;max-height:calc(100vh - 100px);margin:auto;object-fit:contain;cursor:zoom-in;touch-action:pan-x pan-y}
+.reader-lightbox-image.is-zoomed{max-width:none;max-height:none;cursor:zoom-out}
+.reader-lightbox-hint{margin:5px 0;color:#aaa;font-size:12px}
 .lore-page>h2,.lore-world h2{font:clamp(32px,4vw,54px) var(--font-anton),sans-serif;margin:20px 0 28px}.lore-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:25px}.lore-card,.lore-facts article,.update-card{background:#15111c;border:1px solid var(--line)}.lore-card img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;object-position:left center}.lore-card>div{padding:24px}.lore-card h3{font:30px var(--font-spartan),sans-serif;margin:10px 0}.lore-card p,.lore-facts p,.update-card p,.lore-note{color:var(--muted);line-height:1.7}.lore-world{margin-top:65px}.lore-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.lore-facts article{padding:24px}.lore-facts h3{font:24px var(--font-spartan),sans-serif;margin:0 0 12px}.lore-note{margin-top:30px}.update-card{padding:30px;margin:0 0 22px}.update-card h2{font:clamp(28px,4vw,42px) var(--font-anton),sans-serif;margin:16px 0}.update-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}@media(max-width:700px){.lore-grid,.lore-facts{grid-template-columns:1fr}}
 .comments{max-width:900px;margin:50px auto 80px;padding:35px 20px;border-top:1px solid var(--line)}.comments h2{font:clamp(32px,5vw,54px) var(--font-anton),sans-serif;margin:0 0 12px}.comments>p{color:var(--muted);font-size:14px;line-height:1.6}.comments .giscus{margin-top:24px}
 .update-art{display:block;width:100%;height:auto;margin-top:22px;border:1px solid var(--line)}

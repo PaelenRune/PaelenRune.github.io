@@ -44,6 +44,9 @@
   const next = make("button", "reader-tool page-nav", tr ? "Sonraki →" : "Next →");
   const chapters = make("button", "reader-tool", tr ? "Bölümler" : "Chapters");
   const zen = make("button", "reader-tool", tr ? "Odak modu" : "Focus mode");
+  const zenExit = make("button", "reader-zen-exit", tr ? "Odak modundan çık ×" : "Exit focus ×");
+  zenExit.type = "button";
+  document.body.append(zenExit);
   const share = make("button", "reader-tool", tr ? "Paylaş" : "Share");
   const offline = make("button", "reader-tool", tr ? "Çevrimdışı kaydet" : "Save offline");
   [mode, prev, counter, next, chapters, zen, share, offline].forEach(item => toolbar.append(item));
@@ -81,12 +84,22 @@
   mode.addEventListener("click", () => { classic = !classic; safeSet("paelen:reader:mode", classic ? "classic" : "webtoon"); go(current); });
   prev.addEventListener("click", () => go(current - 1));
   next.addEventListener("click", () => go(current + 1));
-  zen.addEventListener("click", () => {
-    document.body.classList.toggle("zen-reader");
-    zen.textContent = document.body.classList.contains("zen-reader") ? (tr ? "Odaktan çık" : "Exit focus") : (tr ? "Odak modu" : "Focus mode");
+  const setZen = async enabled => {
+    document.body.classList.toggle("zen-reader", enabled);
+    zen.textContent = enabled ? (tr ? "Odaktan çık" : "Exit focus") : (tr ? "Odak modu" : "Focus mode");
+    if (enabled && document.fullscreenEnabled && !document.fullscreenElement) {
+      try { await document.documentElement.requestFullscreen(); } catch {}
+    } else if (!enabled && document.fullscreenElement) {
+      try { await document.exitFullscreen(); } catch {}
+    }
+  };
+  zen.addEventListener("click", () => setZen(!document.body.classList.contains("zen-reader")));
+  zenExit.addEventListener("click", () => setZen(false));
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement && document.body.classList.contains("zen-reader")) setZen(false);
   });
   document.addEventListener("keydown", event => {
-    if (event.key === "Escape") { document.body.classList.remove("zen-reader"); zen.textContent = tr ? "Odak modu" : "Focus mode"; }
+    if (event.key === "Escape" && document.body.classList.contains("zen-reader")) setZen(false);
     if (!classic || $("dialog[open]") || /input|textarea/i.test(document.activeElement?.tagName || "")) return;
     if (event.key === "ArrowRight") go(current + 1);
     if (event.key === "ArrowLeft") go(current - 1);
@@ -138,13 +151,57 @@
 
   const lightbox = make("dialog", "reader-lightbox");
   const lightboxClose = make("button", "reader-lightbox-close", tr ? "Kapat ×" : "Close ×");
+  const zoomOut = make("button", "reader-lightbox-control", "−");
+  const zoomIn = make("button", "reader-lightbox-control", "+");
+  const zoomReset = make("button", "reader-lightbox-control", tr ? "Sığdır" : "Fit");
+  const controls = make("div", "reader-lightbox-controls");
+  controls.append(zoomOut, zoomReset, zoomIn, lightboxClose);
+  const viewport = make("div", "reader-lightbox-viewport");
   const zoomed = make("img", "reader-lightbox-image");
-  const lightboxHint = make("p", "", tr ? "Görseli büyütmek için tekrar dokun" : "Tap the image again to zoom");
-  lightbox.append(lightboxClose, zoomed, lightboxHint);
+  const lightboxHint = make("p", "reader-lightbox-hint", tr ? "Dokunarak veya iki parmakla yakınlaştır" : "Tap or pinch with two fingers to zoom");
+  viewport.append(zoomed);
+  lightbox.append(controls, viewport, lightboxHint);
   document.body.append(lightbox);
   lightboxClose.addEventListener("click", () => lightbox.close());
-  zoomed.addEventListener("click", () => zoomed.classList.toggle("is-zoomed"));
-  const openImage = img => { zoomed.src = img.src; zoomed.alt = img.alt; zoomed.classList.remove("is-zoomed"); lightbox.showModal(); };
+  let zoomScale = 1;
+  let fittedWidth = 0;
+  const setZoom = value => {
+    if (!fittedWidth) fittedWidth = zoomed.getBoundingClientRect().width || viewport.clientWidth;
+    zoomScale = Math.max(1, Math.min(4, value));
+    zoomed.style.width = zoomScale === 1 ? "" : `${fittedWidth * zoomScale}px`;
+    zoomed.classList.toggle("is-zoomed", zoomScale > 1);
+  };
+  zoomIn.addEventListener("click", () => setZoom(zoomScale + 0.5));
+  zoomOut.addEventListener("click", () => setZoom(zoomScale - 0.5));
+  zoomReset.addEventListener("click", () => setZoom(1));
+  let pinched = false;
+  zoomed.addEventListener("click", () => {
+    if (pinched) { pinched = false; return; }
+    setZoom(zoomScale === 1 ? 2 : 1);
+  });
+  const distance = touches => Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+  let pinchStart = 0;
+  let pinchScale = 1;
+  viewport.addEventListener("touchstart", event => {
+    if (event.touches.length === 2) { pinchStart = distance(event.touches); pinchScale = zoomScale; }
+  }, { passive: true });
+  viewport.addEventListener("touchmove", event => {
+    if (event.touches.length !== 2 || !pinchStart) return;
+    event.preventDefault();
+    pinched = true;
+    setZoom(pinchScale * distance(event.touches) / pinchStart);
+  }, { passive: false });
+  viewport.addEventListener("touchend", event => { if (event.touches.length < 2) pinchStart = 0; });
+  const openImage = img => {
+    fittedWidth = 0;
+    pinched = false;
+    zoomed.src = img.src;
+    zoomed.alt = img.alt;
+    setZoom(1);
+    lightbox.showModal();
+    requestAnimationFrame(() => { fittedWidth = zoomed.getBoundingClientRect().width; });
+  };
+  zoomed.addEventListener("load", () => { if (lightbox.open && zoomScale === 1) fittedWidth = zoomed.getBoundingClientRect().width; });
   pages.forEach(img => {
     img.addEventListener("click", () => openImage(img));
     img.addEventListener("keydown", event => { if (event.key === "Enter") openImage(img); });
