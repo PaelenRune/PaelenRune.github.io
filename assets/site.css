@@ -87,5 +87,14 @@
 .secret-rune{color:#dcb3ff}.secret-rune[hidden]{display:none}
 @media(max-width:900px){.hero-cat-button{width:75vw}}
 @media(max-width:600px){.hero-cat-button{width:100vw;top:57%}}
+.reader-achievements{margin:44px auto 0;text-align:left;max-width:680px}
+.reader-achievements h2{font:clamp(28px,4vw,40px) var(--font-anton),sans-serif;margin:0 0 8px}
+.achievement-note{font-size:13px;color:var(--muted);margin:0 0 18px}
+.achievement-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.achievement-card{display:flex;align-items:center;gap:13px;padding:17px;border:1px solid #51415d;border-radius:9px;background:#17111e;color:#8e8197}
+.achievement-card.is-unlocked{border-color:#a855f7;background:linear-gradient(125deg,#301842,#17111e);color:var(--white)}
+.achievement-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:50%;border:1px solid currentColor;font-size:24px}
+.achievement-copy{display:grid;gap:5px}.achievement-copy strong{font:700 17px var(--font-spartan),sans-serif}.achievement-copy span{font-size:12px;line-height:1.4}
+@media(max-width:600px){.achievement-list{grid-template-columns:1fr}}
 
 /* Static pages use ordinary images and links. */.series-cover img,.detail-cover img{width:100%;height:100%;object-fit:contain}.reader-pages img{display:block;width:100%;height:auto}.chapter-soundtrack [hidden]{display:none!important}.site-header .icon-link{font-size:30px;line-height:1}.hero-art>img.hero-cat{object-fit:contain}@media(max-width:900px){.site-header .desktop-nav{display:none}.mobile-menu{display:block}.site-header .mobile-menu nav{display:flex}}

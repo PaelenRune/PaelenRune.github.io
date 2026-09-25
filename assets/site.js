@@ -54,6 +54,40 @@
     img.setAttribute("aria-label", tr ? `${index + 1}. sayfayı büyüt` : `Enlarge page ${index + 1}`);
   });
 
+  const achievementBox = make("section", "reader-achievements");
+  achievementBox.setAttribute("aria-label", tr ? "Başarımlar" : "Achievements");
+  const achievementTitle = make("h2", "", tr ? "BAŞARIMLAR" : "ACHIEVEMENTS");
+  const achievementNote = make("p", "achievement-note", tr ? "Rozetler yalnızca bu tarayıcıda saklanır." : "Badges are saved only in this browser.");
+  const achievementList = make("div", "achievement-list");
+  achievementBox.append(achievementTitle, achievementNote, achievementList);
+  $(".reader-end")?.append(achievementBox);
+  const achievementData = [
+    { id: "chapter-1-complete", icon: "✦", name: tr ? "İlk Bölüm" : "First Chapter", detail: tr ? "Bölüm 1'in sonuna ulaştın." : "Reached the end of Chapter One." },
+    { id: "night-owl", icon: "☾", name: tr ? "Gece Kuşu" : "Night Owl", detail: tr ? "02.00–04.59 arasında bir sayfa okudun." : "Read a page between 02:00 and 04:59." },
+  ];
+  const achievementCards = new Map();
+  for (const item of achievementData) {
+    const card = make("div", "achievement-card");
+    const icon = make("span", "achievement-icon", item.icon);
+    const copy = make("div", "achievement-copy");
+    copy.append(make("strong", "", item.name), make("span", "", item.detail));
+    card.append(icon, copy);
+    achievementList.append(card);
+    achievementCards.set(item.id, card);
+  }
+  const unlock = id => {
+    const card = achievementCards.get(id);
+    if (!card || card.classList.contains("is-unlocked")) return;
+    card.classList.add("is-unlocked");
+    card.setAttribute("aria-label", `${card.querySelector("strong").textContent}: ${tr ? "Kazanıldı" : "Unlocked"}`);
+    safeSet(`paelen:achievement:${id}`, "true");
+  };
+  for (const item of achievementData) if (safeGet(`paelen:achievement:${item.id}`) === "true") unlock(item.id);
+  const checkNightOwl = () => {
+    const hour = new Date().getHours();
+    if (hour >= 2 && hour < 5 && document.visibilityState === "visible") unlock("night-owl");
+  };
+
   const toolbar = make("div", "reader-tools");
   toolbar.setAttribute("aria-label", tr ? "Okuyucu araçları" : "Reader tools");
   const mode = make("button", "reader-tool", "");
@@ -92,11 +126,11 @@
     progress.setAttribute("aria-valuemin", "0");
     progress.setAttribute("aria-valuemax", "100");
     safeSet(key, String(current));
-    if (current === pages.length) safeSet("paelen:achievement:first-chapter", "true");
   };
   const go = page => {
     current = Math.max(1, Math.min(pages.length, page));
     render();
+    checkNightOwl();
     pages[current - 1].scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   };
   mode.addEventListener("click", () => { classic = !classic; safeSet("paelen:reader:mode", classic ? "classic" : "webtoon"); go(current); });
@@ -216,6 +250,7 @@
   }, { passive: false });
   viewport.addEventListener("touchend", event => { if (event.touches.length < 2) pinchStart = 0; });
   const openImage = img => {
+    checkNightOwl();
     fittedWidth = 0;
     pinched = false;
     zoomed.src = img.src;
@@ -233,11 +268,16 @@
 
   if ("IntersectionObserver" in window) {
     const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) checkNightOwl();
       if (classic) return;
       const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (visible) { current = Number(visible.target.dataset.page); render(); }
     }, { threshold: [0.25, 0.5, 0.75] });
     pages.forEach(img => observer.observe(img));
+    const end = $(".reader-end");
+    if (end) new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) unlock("chapter-1-complete");
+    }, { threshold: 0.2 }).observe(end);
   }
   render();
   if (location.hash.startsWith("#page-")) {
