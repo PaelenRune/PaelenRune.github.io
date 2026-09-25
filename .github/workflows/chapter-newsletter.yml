@@ -1,0 +1,19 @@
+name: Notify newsletter subscribers
+
+on:
+  push:
+    branches: [main]
+    paths: [newsletter-releases.json]
+  schedule:
+    - cron: '17 10 * * *'
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Send newly public chapters
+        run: node scripts/send-chapter-newsletter.mjs
+        env:
+          BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
