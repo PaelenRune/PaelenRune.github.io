@@ -106,7 +106,7 @@
   const shareTitle = make("h2", "", tr ? "Bölümü paylaş" : "Share this chapter");
   const shareClose = make("button", "reader-tool", tr ? "Kapat" : "Close");
   shareClose.addEventListener("click", () => sharing.close());
-  const copy = make("button", "reader-tool", tr ? "Bağlantıyı kopyala" : "Copy link");
+  const copy = make("button", "reader-tool", tr ? "WhatsApp / Discord için bağlantıyı kopyala" : "Copy link for WhatsApp / Discord");
   copy.addEventListener("click", async () => {
     try { await navigator.clipboard.writeText(chapterPath); copy.textContent = tr ? "Kopyalandı" : "Copied"; }
     catch { copy.textContent = chapterPath; }
