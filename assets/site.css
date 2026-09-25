@@ -96,5 +96,17 @@
 .achievement-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:50%;border:1px solid currentColor;font-size:24px}
 .achievement-copy{display:grid;gap:5px}.achievement-copy strong{font:700 17px var(--font-spartan),sans-serif}.achievement-copy span{font-size:12px;line-height:1.4}
 @media(max-width:600px){.achievement-list{grid-template-columns:1fr}}
+.series-filters{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px}
+.series-filters label{display:grid;gap:7px;min-width:150px;color:var(--muted);font:600 13px var(--font-spartan),sans-serif}
+.series-filters select{min-height:42px;padding:8px 32px 8px 12px;color:var(--white);background:#1c1425;border:1px solid #614b70;border-radius:5px}
+.series-filter-count,.series-filter-empty{color:var(--muted);font-size:13px;margin:12px 0 24px}
+.series-card[hidden],.series-filter-empty[hidden]{display:none!important}
+.crop-dialog{max-width:min(95vw,760px);max-height:92vh;overflow:auto;text-align:center}
+.crop-dialog p{color:var(--muted);line-height:1.5}
+.crop-stage{position:relative;width:min(100%,520px);margin:18px auto;touch-action:none;cursor:crosshair;user-select:none}
+.crop-image{display:block;width:100%;height:auto;pointer-events:none}
+.crop-selection{position:absolute;border:2px solid #e7baff;background:#b15eff33;box-shadow:0 0 0 9999px #0006;pointer-events:none}
+.crop-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.crop-status{min-height:1.5em;font-size:13px}
 
 /* Static pages use ordinary images and links. */.series-cover img,.detail-cover img{width:100%;height:100%;object-fit:contain}.reader-pages img{display:block;width:100%;height:auto}.chapter-soundtrack [hidden]{display:none!important}.site-header .icon-link{font-size:30px;line-height:1}.hero-art>img.hero-cat{object-fit:contain}@media(max-width:900px){.site-header .desktop-nav{display:none}.mobile-menu{display:block}.site-header .mobile-menu nav{display:flex}}

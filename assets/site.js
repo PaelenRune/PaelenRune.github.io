@@ -35,6 +35,22 @@
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 
   if (!pages.length) {
+    const filters = [...document.querySelectorAll(".series-filters select")];
+    if (filters.length) {
+      const cards = [...document.querySelectorAll(".series-grid .series-card")];
+      const applyFilters = () => {
+        const selected = Object.fromEntries(filters.map(filter => [filter.dataset.filter, filter.value]));
+        let count = 0;
+        for (const card of cards) {
+          card.hidden = Object.entries(selected).some(([field, value]) => value && card.dataset[field] !== value);
+          if (!card.hidden) count++;
+        }
+        $(".series-filter-count").textContent = tr ? `${count} seri gösteriliyor` : `${count} series shown`;
+        $(".series-filter-empty").hidden = count !== 0;
+      };
+      filters.forEach(filter => filter.addEventListener("change", applyFilters));
+      applyFilters();
+    }
     if (saved > 1) {
       const target = $(".hero-ctas") || $(".series-detail .button.primary")?.parentElement;
       if (target) {
@@ -206,12 +222,13 @@
   const zoomOut = make("button", "reader-lightbox-control", "−");
   const zoomIn = make("button", "reader-lightbox-control", "+");
   const zoomReset = make("button", "reader-lightbox-control", tr ? "Sığdır" : "Fit");
+  const cropOpen = make("button", "reader-lightbox-control", tr ? "Kareyi paylaş" : "Share panel");
   const controls = make("div", "reader-lightbox-controls");
   const secretRune = make("button", "reader-lightbox-control secret-rune", "✦");
   secretRune.type = "button";
   secretRune.setAttribute("aria-label", tr ? "Gizli çizimi aç" : "Reveal hidden art");
   secretRune.hidden = true;
-  controls.append(secretRune, zoomOut, zoomReset, zoomIn, lightboxClose);
+  controls.append(secretRune, cropOpen, zoomOut, zoomReset, zoomIn, lightboxClose);
   const viewport = make("div", "reader-lightbox-viewport");
   const zoomed = make("img", "reader-lightbox-image");
   const lightboxHint = make("p", "reader-lightbox-hint", tr ? "Dokunarak veya iki parmakla yakınlaştır" : "Tap or pinch with two fingers to zoom");
@@ -220,6 +237,103 @@
   document.body.append(lightbox);
   lightboxClose.addEventListener("click", () => lightbox.close());
   secretRune.addEventListener("click", () => { lightbox.close(); showSurprise("art"); });
+  const cropDialog = make("dialog", "reader-dialog crop-dialog");
+  let cropPage = current;
+  const cropClose = make("button", "reader-tool", tr ? "Kapat ×" : "Close ×");
+  const cropTitle = make("h2", "", tr ? "Kare seç" : "Select a panel");
+  const cropHint = make("p", "", tr ? "Paylaşmak istediğin alanı görsel üzerinde sürükleyerek seç." : "Drag over the image to select the area to share.");
+  const cropStage = make("div", "crop-stage");
+  const cropImage = make("img", "crop-image");
+  const cropSelection = make("div", "crop-selection");
+  const cropActions = make("div", "crop-actions");
+  const cropDownload = make("button", "reader-tool", tr ? "PNG indir" : "Download PNG");
+  const cropShare = make("button", "reader-tool", tr ? "Paylaş" : "Share");
+  const cropStatus = make("p", "crop-status");
+  cropShare.hidden = typeof navigator.share !== "function";
+  cropClose.addEventListener("click", () => cropDialog.close());
+  cropStage.append(cropImage, cropSelection);
+  cropActions.append(cropDownload, cropShare);
+  cropDialog.append(cropClose, cropTitle, cropHint, cropStage, cropActions, cropStatus);
+  document.body.append(cropDialog);
+  let crop = { x: 0.15, y: 0.15, w: 0.7, h: 0.7 };
+  let cropStart = null;
+  const showCrop = () => {
+    cropSelection.style.left = `${crop.x * 100}%`;
+    cropSelection.style.top = `${crop.y * 100}%`;
+    cropSelection.style.width = `${crop.w * 100}%`;
+    cropSelection.style.height = `${crop.h * 100}%`;
+  };
+  const cropPoint = event => {
+    const rect = cropImage.getBoundingClientRect();
+    return { x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)), y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)) };
+  };
+  cropStage.addEventListener("pointerdown", event => {
+    cropStart = cropPoint(event);
+    cropStage.setPointerCapture(event.pointerId);
+    crop = { ...cropStart, w: 0, h: 0 };
+    showCrop();
+  });
+  cropStage.addEventListener("pointermove", event => {
+    if (!cropStart) return;
+    const point = cropPoint(event);
+    crop = { x: Math.min(cropStart.x, point.x), y: Math.min(cropStart.y, point.y), w: Math.abs(point.x - cropStart.x), h: Math.abs(point.y - cropStart.y) };
+    showCrop();
+  });
+  const finishCrop = () => {
+    if (!cropStart) return;
+    cropStart = null;
+    if (crop.w < 0.02 || crop.h < 0.02) crop = { x: 0.15, y: 0.15, w: 0.7, h: 0.7 };
+    showCrop();
+  };
+  cropStage.addEventListener("pointerup", finishCrop);
+  cropStage.addEventListener("pointercancel", finishCrop);
+  cropOpen.addEventListener("click", () => {
+    cropImage.src = zoomed.src;
+    cropImage.alt = zoomed.alt;
+    crop = { x: 0.15, y: 0.15, w: 0.7, h: 0.7 };
+    showCrop();
+    cropStatus.textContent = "";
+    lightbox.close();
+    cropDialog.showModal();
+  });
+  const makeCropBlob = () => new Promise((resolve, reject) => {
+    if (!cropImage.complete || !cropImage.naturalWidth) { reject(new Error("Image unavailable")); return; }
+    const sx = Math.round(crop.x * cropImage.naturalWidth);
+    const sy = Math.round(crop.y * cropImage.naturalHeight);
+    const sw = Math.max(1, Math.round(crop.w * cropImage.naturalWidth));
+    const sh = Math.max(1, Math.round(crop.h * cropImage.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = sw; canvas.height = sh;
+    const context = canvas.getContext("2d");
+    context.drawImage(cropImage, sx, sy, sw, sh, 0, 0, sw, sh);
+    const labelSize = Math.max(14, Math.round(sw * 0.026));
+    const bar = Math.max(42, Math.round(labelSize * 2.2));
+    context.fillStyle = "#09070dcc";
+    context.fillRect(0, sh - bar, sw, bar);
+    context.font = `700 ${labelSize}px sans-serif`;
+    context.fillStyle = "#ffffff";
+    context.fillText("PAELEN COMICS · paelenrune.github.io", Math.max(10, sw * 0.015), sh - bar / 2 + labelSize * 0.35, sw - 20);
+    canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("PNG unavailable")), "image/png");
+  });
+  const cropFileName = () => `paelen-comics-bolum-1-sayfa-${cropPage}.png`;
+  const downloadBlob = blob => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url; link.download = cropFileName(); link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+  cropDownload.addEventListener("click", async () => {
+    try { downloadBlob(await makeCropBlob()); cropStatus.textContent = tr ? "Filigranlı kare indirildi." : "Watermarked panel downloaded."; }
+    catch { cropStatus.textContent = tr ? "Görsel hazırlanamadı. Tekrar dene." : "Could not prepare the image. Try again."; }
+  });
+  cropShare.addEventListener("click", async () => {
+    try {
+      const blob = await makeCropBlob();
+      const file = new File([blob], cropFileName(), { type: "image/png" });
+      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: "Paelen Comics", url: chapterPath });
+      else { downloadBlob(blob); cropStatus.textContent = tr ? "Cihaz görsel paylaşımını desteklemiyor; PNG indirildi." : "Image sharing is unavailable; PNG downloaded."; }
+    } catch (error) { if (error.name !== "AbortError") cropStatus.textContent = tr ? "Paylaşım açılamadı. PNG indir düğmesini dene." : "Sharing failed. Try downloading the PNG."; }
+  });
   let zoomScale = 1;
   let fittedWidth = 0;
   const setZoom = value => {
@@ -251,6 +365,7 @@
   viewport.addEventListener("touchend", event => { if (event.touches.length < 2) pinchStart = 0; });
   const openImage = img => {
     checkNightOwl();
+    cropPage = Number(img.dataset.page);
     fittedWidth = 0;
     pinched = false;
     zoomed.src = img.src;
