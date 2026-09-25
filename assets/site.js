@@ -13,6 +13,24 @@
   };
   const safeGet = (name, fallback = "") => { try { return localStorage.getItem(name) ?? fallback; } catch { return fallback; } };
   const safeSet = (name, value) => { try { localStorage.setItem(name, value); } catch {} };
+  const surprise = make("dialog", "reader-dialog easter-dialog");
+  const surpriseClose = make("button", "reader-tool", tr ? "Kapat ×" : "Close ×");
+  const surpriseTitle = make("h2", "");
+  const surpriseText = make("p", "");
+  const surpriseImage = make("img", "easter-image");
+  surpriseClose.type = "button";
+  surpriseClose.addEventListener("click", () => surprise.close());
+  surprise.append(surpriseClose, surpriseTitle, surpriseText, surpriseImage);
+  document.body.append(surprise);
+  const showSurprise = kind => {
+    const cat = kind === "cat";
+    surpriseTitle.textContent = cat ? (tr ? "Miyav! Beni buldun." : "Meow! You found me.") : (tr ? "Gizli çizim: Turkuaz Eşik" : "Hidden art: Turkuaz Eşik");
+    surpriseText.textContent = cat ? (tr ? "Paelen, çizim masasının başında sana eşlik ediyor. Birinci bölümdeki dünyaya göz atmak ister misin?" : "Paelen is keeping you company at the drawing desk. Take a peek at the world of Chapter One.") : (tr ? "Birinci bölümün mekânları için hazırlanan konsept çizimleri. Avlu, pazar, liman ve han sahnelerine yakından bak." : "Concept art for Chapter One's courtyard, market, harbor and inn scenes.");
+    surpriseImage.src = cat ? "/mascot/cat-canonical.png" : "/lore/turkuaz-esik-concepts.webp";
+    surpriseImage.alt = cat ? "Paelen" : (tr ? "Turkuaz Eşik mekân konseptleri" : "Turkuaz Eşik location concepts");
+    surprise.showModal();
+  };
+  document.querySelector(".hero-cat-button")?.addEventListener("click", () => showSurprise("cat"));
   const saved = Math.max(1, Number(safeGet(key, "1")) || 1);
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 
@@ -155,7 +173,11 @@
   const zoomIn = make("button", "reader-lightbox-control", "+");
   const zoomReset = make("button", "reader-lightbox-control", tr ? "Sığdır" : "Fit");
   const controls = make("div", "reader-lightbox-controls");
-  controls.append(zoomOut, zoomReset, zoomIn, lightboxClose);
+  const secretRune = make("button", "reader-lightbox-control secret-rune", "✦");
+  secretRune.type = "button";
+  secretRune.setAttribute("aria-label", tr ? "Gizli çizimi aç" : "Reveal hidden art");
+  secretRune.hidden = true;
+  controls.append(secretRune, zoomOut, zoomReset, zoomIn, lightboxClose);
   const viewport = make("div", "reader-lightbox-viewport");
   const zoomed = make("img", "reader-lightbox-image");
   const lightboxHint = make("p", "reader-lightbox-hint", tr ? "Dokunarak veya iki parmakla yakınlaştır" : "Tap or pinch with two fingers to zoom");
@@ -163,6 +185,7 @@
   lightbox.append(controls, viewport, lightboxHint);
   document.body.append(lightbox);
   lightboxClose.addEventListener("click", () => lightbox.close());
+  secretRune.addEventListener("click", () => { lightbox.close(); showSurprise("art"); });
   let zoomScale = 1;
   let fittedWidth = 0;
   const setZoom = value => {
@@ -197,6 +220,7 @@
     pinched = false;
     zoomed.src = img.src;
     zoomed.alt = img.alt;
+    secretRune.hidden = img.dataset.page !== "7";
     setZoom(1);
     lightbox.showModal();
     requestAnimationFrame(() => { fittedWidth = zoomed.getBoundingClientRect().width; });
