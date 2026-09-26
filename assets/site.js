@@ -99,35 +99,35 @@
     return edges.slice(0, -1).map((left, part) => ({ page: index + 1, src: img.src, x: left, y: top, w: edges[part + 1] - left, h: bottom - top }));
   }));
 
-  const achievementBox = make("section", "reader-achievements");
-  achievementBox.setAttribute("aria-label", tr ? "Başarımlar" : "Achievements");
-  const achievementTitle = make("h2", "", tr ? "BAŞARIMLAR" : "ACHIEVEMENTS");
-  const achievementNote = make("p", "achievement-note", tr ? "Rozetler yalnızca bu tarayıcıda saklanır." : "Badges are saved only in this browser.");
-  const achievementList = make("div", "achievement-list");
-  achievementBox.append(achievementTitle, achievementNote, achievementList);
-  $(".reader-end")?.append(achievementBox);
+  const achievementToast = make("div", "achievement-toast");
+  achievementToast.setAttribute("role", "status");
+  achievementToast.setAttribute("aria-live", "polite");
+  achievementToast.hidden = true;
+  document.body.append(achievementToast);
   const achievementData = [
     { id: "chapter-1-complete", icon: "✦", name: tr ? "İlk Bölüm" : "First Chapter", detail: tr ? "Bölüm 1'in sonuna ulaştın." : "Reached the end of Chapter One." },
     { id: "night-owl", icon: "☾", name: tr ? "Gece Kuşu" : "Night Owl", detail: tr ? "02.00–04.59 arasında bir sayfa okudun." : "Read a page between 02:00 and 04:59." },
   ];
-  const achievementCards = new Map();
-  for (const item of achievementData) {
-    const card = make("div", "achievement-card");
-    const icon = make("span", "achievement-icon", item.icon);
-    const copy = make("div", "achievement-copy");
-    copy.append(make("strong", "", item.name), make("span", "", item.detail));
-    card.append(icon, copy);
-    achievementList.append(card);
-    achievementCards.set(item.id, card);
-  }
-  const unlock = id => {
-    const card = achievementCards.get(id);
-    if (!card || card.classList.contains("is-unlocked")) return;
-    card.classList.add("is-unlocked");
-    card.setAttribute("aria-label", `${card.querySelector("strong").textContent}: ${tr ? "Kazanıldı" : "Unlocked"}`);
-    safeSet(`paelen:achievement:${id}`, "true");
+  const achievementQueue = [];
+  let achievementTimer = null;
+  const showNextAchievement = () => {
+    if (achievementTimer || !achievementQueue.length) return;
+    const item = achievementQueue.shift();
+    achievementToast.replaceChildren(make("span", "achievement-toast-icon", item.icon), make("strong", "", tr ? `Başarım kazandın: ${item.name}` : `Achievement unlocked: ${item.name}`), make("span", "", item.detail));
+    achievementToast.hidden = false;
+    achievementTimer = setTimeout(() => {
+      achievementToast.hidden = true;
+      achievementTimer = null;
+      showNextAchievement();
+    }, 5000);
   };
-  for (const item of achievementData) if (safeGet(`paelen:achievement:${item.id}`) === "true") unlock(item.id);
+  const unlock = id => {
+    const item = achievementData.find(achievement => achievement.id === id);
+    if (!item || safeGet(`paelen:achievement:${id}`) === "true") return;
+    safeSet(`paelen:achievement:${id}`, "true");
+    achievementQueue.push(item);
+    showNextAchievement();
+  };
   const checkNightOwl = () => {
     const hour = new Date().getHours();
     if (hour >= 2 && hour < 5 && document.visibilityState === "visible") unlock("night-owl");

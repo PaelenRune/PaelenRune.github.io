@@ -44,9 +44,9 @@
 .mobile-menu nav a:hover{background:#2a1a35}
 @media(max-width:900px){.site-header .desktop-nav{display:none}.mobile-menu{display:block}.site-header .mobile-menu nav{display:flex}}
 @media(max-width:380px){.wordmark b{display:none}.header-inner{gap:8px}.header-actions{gap:8px}}
-.series-cover,.detail-cover{aspect-ratio:2/3}
-.series-cover img,.detail-cover img{display:block;width:100%;height:100%;object-fit:contain;object-position:center}
-.series-card:hover .series-cover img{transform:none}
+.series-cover,.detail-cover{position:relative;aspect-ratio:2/3!important;background:#140d1c!important;border:1px solid #3c2a46;border-radius:8px;overflow:hidden}
+.series-cover img,.detail-cover img{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important}
+.series-card:hover .series-cover img{transform:none!important}
 .reader-tools{position:sticky;top:0;z-index:12;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:#100b17f2;border-bottom:1px solid #51365e;backdrop-filter:blur(12px)}
 .reader-tool{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 12px;color:var(--white);background:#24162f;border:1px solid #614b70;border-radius:5px;font:600 12px var(--font-spartan),sans-serif;text-decoration:none}
 .reader-tool:hover,.reader-tool:focus-visible{background:#4a285f}
@@ -127,9 +127,13 @@
 .reader-rune-reveal{animation:rune-reveal 1.2s ease-out 1}
 @media(max-width:600px){.guided-bar{gap:4px}.guided-bar .reader-tool{font-size:10px;padding:7px}.guided-count{min-width:75px;font-size:11px}.guided-stage{height:calc(100dvh - 135px)}}
 @media(prefers-reduced-motion:reduce){.guided-frame,.guided-image{transition:none}.reader-rune-reveal{animation:none}}
+.footer-social-link{display:inline-flex;align-items:center;gap:7px}.footer-social-link img{display:block;width:38px;height:38px;object-fit:contain;flex:none}.footer-social-link:hover img{transform:translateY(-2px)}
+.achievement-toast{position:fixed;right:20px;bottom:20px;z-index:100;display:grid;grid-template-columns:44px minmax(0,1fr);column-gap:12px;max-width:min(390px,calc(100vw - 32px));padding:16px 18px;background:#241331;color:#fff;border:1px solid #c66bff;border-radius:12px;box-shadow:0 18px 50px #000b}
+.achievement-toast[hidden]{display:none}.achievement-toast-icon{grid-row:span 2;display:grid;place-items:center;width:42px;height:42px;border:1px solid #dcaaff;border-radius:50%;font-size:24px}.achievement-toast strong{font:700 17px var(--font-spartan),sans-serif}.achievement-toast>span:last-child{font-size:12px;line-height:1.5;color:#d8c9e2}
+@media(max-width:600px){.achievement-toast{right:16px;bottom:16px}.footer-social-link img{width:34px;height:34px}}
 .compare-lens{position:fixed;z-index:40;width:235px;height:175px;overflow:hidden;pointer-events:none;background:#0c0811;border:2px solid #c66bff;border-radius:8px;box-shadow:0 12px 40px #000c}
 .compare-lens[hidden]{display:none}
 .compare-label{position:absolute;z-index:1;top:5px;left:6px;padding:4px 7px;background:#160e20;color:#f3d9ff;font:700 10px var(--font-spartan),sans-serif;letter-spacing:.08em}
 .compare-image{width:100%;height:100%;background-repeat:no-repeat}
 
-/* Static pages use ordinary images and links. */.series-cover img,.detail-cover img{width:100%;height:100%;object-fit:contain}.reader-pages img{display:block;width:100%;height:auto}.chapter-soundtrack [hidden]{display:none!important}.site-header .icon-link{font-size:30px;line-height:1}.hero-art>img.hero-cat{object-fit:contain}@media(max-width:900px){.site-header .desktop-nav{display:none}.mobile-menu{display:block}.site-header .mobile-menu nav{display:flex}}
+/* Static pages use ordinary images and links. */.series-cover,.detail-cover{aspect-ratio:2/3!important;background:#140d1c;border-radius:8px;overflow:hidden}.series-cover img,.detail-cover img{display:block;width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important}.reader-pages img{display:block;width:100%;height:auto}.chapter-soundtrack [hidden]{display:none!important}.site-header .icon-link{font-size:30px;line-height:1}.hero-art>img.hero-cat{object-fit:contain}@media(max-width:900px){.site-header .desktop-nav{display:none}.mobile-menu{display:block}.site-header .mobile-menu nav{display:flex}}
